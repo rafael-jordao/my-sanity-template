@@ -5,6 +5,8 @@ export const GROQPageSettingsQuery = groq`
   settings{
     title,
     "slug": slug.current,
-    ${GROQSeoQuery}
+    seo {
+     ${GROQSeoQuery}
+    }
   }
 `;
