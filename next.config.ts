@@ -12,14 +12,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  typescript: {
-    // Durante o build, ignorar erros de TypeScript em desenvolvimento
-    ignoreBuildErrors: process.env.NODE_ENV === 'development',
-  },
-  eslint: {
-    // Durante o build, ignorar erros de ESLint em desenvolvimento
-    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
-  },
 };
 
 export default nextConfig;

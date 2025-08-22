@@ -1,5 +1,5 @@
-import { IHomepage } from '@/sanity/pages/Homepage';
+import { IHomepage } from '@/lib/sanity/types/pages/IHomepage';
 
 export default function PageHome({ data }: { data: IHomepage }) {
-  return <h1 className="text-white">{data?.settings?.seo?.description}</h1>;
+  return <h1 className="text-white">{data?.settings?.title}</h1>;
 }

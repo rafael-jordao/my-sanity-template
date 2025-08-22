@@ -1,20 +1,6 @@
-import { createClient } from 'next-sanity';
+'server-only';
 
-export const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET!,
-  apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION!,
-  useCdn: false, // Set to false for ISR
-  token: process.env.SANITY_API_READ_TOKEN,
-});
-
-export const previewClient = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET!,
-  apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION!,
-  useCdn: false,
-  token: process.env.SANITY_API_READ_TOKEN,
-});
+import { client, previewClient } from './client';
 
 // Configurações de revalidate personalizáveis por query
 const REVALIDATE_CONFIGS = {
@@ -47,15 +33,15 @@ interface SanityFetchOptions {
  * @param options - Opções de cache e revalidate
  * @returns Promise com os dados do Sanity
  */
-export async function sanityFetch<T = any>({
+export async function sanityFetch({
   query,
   params = {},
   options = {},
 }: {
   query: string;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
   options?: SanityFetchOptions;
-}): Promise<T> {
+}) {
   const {
     revalidateTag = 'default',
     revalidate: customRevalidate,
@@ -96,7 +82,7 @@ export async function sanityFetch<T = any>({
     }
 
     // Fazer fetch usando o cliente Sanity
-    const data = await clientToUse.fetch<T>(query, params);
+    const data = await clientToUse.fetch(query, params);
 
     return data;
   } catch (error) {

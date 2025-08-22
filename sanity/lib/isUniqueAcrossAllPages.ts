@@ -1,5 +1,3 @@
-// /sanity/isUniqueAcrossAllPages.ts
-
 // Tipagem mínima só para não depender de tipos internos do Sanity
 type IsUniqueContext = {
   document?: { _id?: string };
@@ -20,7 +18,7 @@ export async function isUniqueAcrossAllPages(
   context: IsUniqueContext
 ) {
   const { document, getClient } = context;
-  const client = getClient({ apiVersion: '2024-05-01' });
+  const client = getClient({ apiVersion: '2023-08-01' });
 
   const id = document?._id?.replace(/^drafts\./, '');
 

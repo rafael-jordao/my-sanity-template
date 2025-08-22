@@ -1,4 +1,3 @@
-import { groq } from 'next-sanity';
 import { defineType } from 'sanity';
 
 export const seoType = defineType({
@@ -48,13 +47,3 @@ export const seoType = defineType({
     },
   ],
 });
-
-export const GROQSeoQuery = groq`
-  seo {
-    title,
-    description,
-    keywords,
-    noIndex,
-    "ogImageUrl": ogImage.asset->url
-  }
-`;

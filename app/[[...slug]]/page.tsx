@@ -1,71 +1,59 @@
 import { Metadata } from 'next';
-import { sanityFetch } from '@/lib/sanity';
 
-import { AvailablePages, PageTypeMap } from '@/sanity/pages';
 import { stegaClean } from 'next-sanity';
-import { GROQPageSettingsQuery } from '@/sanity/objects/pageSettings';
 
+import { AVAILABLE_PAGE_TYPES, PageTypeMap } from '@/lib/routing/pageTypes';
 import { createElement } from 'react';
+import { sanityFetch } from '@/lib/sanity/fetch';
+import { GROQPageSettingsQuery } from '@/lib/sanity/queries/fragments/pageSettings';
 
 export const dynamicParams = false;
 
-// Gerar parâmetros estáticos para ISR - incluindo homepage
+type SanityPageSlugResult = { _type: string; slug: string };
+
+// ISR params
 export async function generateStaticParams() {
-  const pages = await sanityFetch<{ slug: string; _type: string }[]>({
+  const pages = await sanityFetch({
     query: `
-      *[_type in [${AvailablePages.map((type) => type.name)
-        .map((name) => `"${name}"`)
-        .toString()}]]{
+      *[_type in ${JSON.stringify(AVAILABLE_PAGE_TYPES)}]{
         _type,
-        "slug": settings.slug.current,
+        "slug": settings.slug.current
       }
     `,
   });
 
-  const params = pages.map((page) => {
-    if (!page.slug || page.slug === '/') {
-      return { slug: [] }; // homepage
-    }
-    return { slug: page.slug.split('/').filter(Boolean) };
-  });
-
-  // console.log('Generated static params:', params);
-  return params;
+  return (pages as SanityPageSlugResult[]).map((p) =>
+    !p.slug || p.slug === '/'
+      ? { slug: [] }
+      : { slug: p.slug.split('/').filter(Boolean) }
+  );
 }
 
-// Gerar metadados dinâmicos
-export async function generateMetadata({ params }: any): Promise<Metadata> {
-  const awaitedParams = await params;
-  const slug = '/' + (awaitedParams?.slug?.join('/') ?? '');
+// Metadata dinâmico
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string[] }>;
+}): Promise<Metadata> {
+  const awaited = await params;
+  const slug = '/' + (awaited?.slug?.join('/') ?? '');
 
   const data = await sanityFetch({
-    query: `
-      *[settings.slug.current == $slug]{
-        _type,
-        _id,
-      }
-    `,
-    params: {
-      slug: slug,
-    },
+    query: `*[settings.slug.current == $slug]{ _type, _id }`,
+    params: { slug },
   });
 
-  if (data?.length === 0) {
-    return {
-      title: '404',
-    };
-  }
+  if (!data?.length) return { title: '404' };
 
-  const documentType = data?.[0]?._type;
-  const id = data?.[0]?._id;
+  const { _type, _id } = data[0];
 
   const pageData = await sanityFetch({
     query: `
-    *[_id == $id && _type == $type][0]{
-      ${GROQPageSettingsQuery}
-    }
-  `,
-    params: { id, type: documentType },
+      *[_id == $id && _type == $type][0]{
+        ${GROQPageSettingsQuery}
+      }
+    `,
+    params: { id: _id, type: _type },
   });
 
   return {
@@ -76,25 +64,21 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
   };
 }
 
-export default async function Page({ params }: any) {
-  const slug = '/' + (params?.slug?.join('/') ?? '');
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string[] }>;
+}) {
+  const awaited = await params;
+  const slug = '/' + (awaited?.slug?.join('/') ?? '');
 
   const docMeta = await sanityFetch({
-    query: `
-      *[settings.slug.current == $slug][0]{
-        _type,
-        _id
-      }
-    `,
+    query: `*[settings.slug.current == $slug][0]{ _type, _id }`,
     params: { slug },
   });
 
-  const query = PageTypeMap[docMeta._type].query;
-  const component = PageTypeMap[docMeta._type].component;
-
-  const pageData = await sanityFetch<any>({
-    query,
-  });
+  const { query, component } = PageTypeMap[docMeta._type];
+  const pageData = await sanityFetch({ query, params: { id: docMeta._id } });
 
   return <>{createElement(component, { data: pageData ?? {} })}</>;
 }

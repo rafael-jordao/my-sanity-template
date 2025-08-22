@@ -1,9 +1,9 @@
 import { defineConfig } from 'sanity';
 import { deskTool } from 'sanity/desk';
 import { visionTool } from '@sanity/vision';
-import { schemaTypes } from './sanity';
+import { schemaTypes } from './sanity/schema';
 import { structureTool } from 'sanity/structure';
-import { AvailablePages } from './sanity/pages';
+import { AvailablePages } from './sanity/schema/pages/index.studio';
 
 export default defineConfig({
   name: 'default',
