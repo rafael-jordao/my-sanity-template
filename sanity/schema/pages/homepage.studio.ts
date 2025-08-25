@@ -9,8 +9,23 @@ export const homepageType = definePage({
       name: 'hero',
       title: 'Hero Section',
       type: 'object',
+      options: {
+        collapsible: true,
+      },
       fields: [
-        { name: 'backgroundImage', title: 'Background Image', type: 'image' },
+        { name: 'title', title: 'Title', type: 'string' },
+        { name: 'description', title: 'Description', type: 'text' },
+      ],
+    },
+
+    {
+      name: 'intro',
+      title: 'Intro Section',
+      type: 'object',
+      options: {
+        collapsible: true,
+      },
+      fields: [
         { name: 'title', title: 'Title', type: 'string' },
         { name: 'description', title: 'Description', type: 'text' },
       ],

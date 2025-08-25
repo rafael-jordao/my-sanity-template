@@ -16,7 +16,7 @@ export const definePage = ({ name, title, fields }: IDefinePage) => {
       select: { title: 'settings.title', subtitle: 'settings.slug.current' },
     },
     fields: [
-      { name: 'settings', title: 'Settings', type: 'pageSettings' },
+      { name: 'settings', title: 'Page Settings', type: 'pageSettings' },
       ...fields,
     ],
   });

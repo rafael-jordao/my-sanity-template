@@ -9,11 +9,9 @@ import { GROQPageSettingsQuery } from '@/lib/sanity/queries/fragments/pageSettin
 import { notFound } from 'next/navigation';
 
 export const dynamicParams = true;
-export const revalidate = 10; // 1 minuto
 
 type SanityPageSlugResult = { _type: string; slug: string };
 
-// ISR params
 export async function generateStaticParams() {
   const pages = await sanityFetch({
     query: `
@@ -28,13 +26,11 @@ export async function generateStaticParams() {
     `,
   });
 
-  const result = (pages as SanityPageSlugResult[]).map((p) =>
-    !p.slug || p.slug === '/'
-      ? { slug: [] }
-      : { slug: p.slug.split('/').filter(Boolean) }
-  );
+  const result = (pages as SanityPageSlugResult[]).map((p) => {
+    if (!p.slug || p.slug === '/') return { slug: [] };
+    return { slug: p.slug.split('/').filter(Boolean) };
+  });
 
-  console.log('Static Params:', result);
   return result;
 }
 
@@ -45,9 +41,17 @@ export async function generateMetadata({
   params: Promise<{ slug: string[] }>;
 }): Promise<Metadata> {
   const awaited = await params;
-  const slug = '/' + (awaited?.slug?.join('/') ?? '');
+  const slugArray = awaited?.slug ?? [];
+  const slug = '/' + slugArray.join('/');
 
-  const data = await sanityFetch({
+  const data = await sanityFetch<
+    [
+      {
+        _type: string;
+        _id: string;
+      }
+    ]
+  >({
     query: `
       *[
         settings.slug.current == $slug &&
@@ -57,14 +61,21 @@ export async function generateMetadata({
         _id
       }
     `,
-    params: { slug },
+    params: { slug: slug },
   });
 
   if (!data?.length) return { title: '404: Page Not Found' };
 
   const { _type, _id } = data[0];
 
-  const pageData = await sanityFetch({
+  const pageData = await sanityFetch<{
+    settings: {
+      seo: {
+        title: string;
+        description: string;
+      };
+    };
+  }>({
     query: `
       *[
         _id == $id &&
@@ -78,9 +89,9 @@ export async function generateMetadata({
   });
 
   return {
-    title: stegaClean(pageData?.settings?.title ?? 'No title found'),
+    title: stegaClean(pageData?.settings?.seo?.title ?? 'No title found'),
     description: stegaClean(
-      pageData?.settings?.description ?? 'No description found'
+      pageData?.settings?.seo?.description ?? 'No description found'
     ),
   };
 }
@@ -91,9 +102,13 @@ export default async function Page({
   params: Promise<{ slug: string[] }>;
 }) {
   const awaited = await params;
-  const slug = '/' + (awaited?.slug?.join('/') ?? '');
+  const slugArray = awaited?.slug ?? []; // fallback seguro
+  const slug = '/' + slugArray.join('/');
 
-  const docMeta = await sanityFetch({
+  const docMeta = await sanityFetch<{
+    _type: string;
+    _id: string;
+  }>({
     query: `
       *[
         settings.slug.current == $slug &&
@@ -115,7 +130,10 @@ export default async function Page({
     return notFound();
   }
 
-  const pageData = await sanityFetch({ query, params: { id: docMeta._id } });
+  const pageData = await sanityFetch({
+    query,
+    params: { id: docMeta._id },
+  });
 
   return <>{createElement(component, { data: pageData ?? {} })}</>;
 }

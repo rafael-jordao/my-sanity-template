@@ -6,6 +6,10 @@ export const pageSettingsType = defineType({
   name: 'pageSettings',
   title: 'Page Settings',
   type: 'object',
+  options: {
+    collapsible: true,
+    collapsed: false,
+  },
   fields: [
     {
       name: 'title',

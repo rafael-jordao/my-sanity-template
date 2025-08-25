@@ -7,6 +7,11 @@ export const GROQHomepageQuery = groq`
     hero{ 
       title, 
       description 
+    },
+
+    intro{ 
+      title, 
+      description 
     }
   }
 `;

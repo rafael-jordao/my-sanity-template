@@ -5,4 +5,9 @@ export interface IHomepage extends IPageSettings {
     title?: string;
     description?: string;
   };
+
+  intro: {
+    title?: string;
+    description?: string;
+  };
 }
