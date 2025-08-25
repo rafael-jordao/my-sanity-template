@@ -15,6 +15,12 @@ export const homepageType = definePage({
       fields: [
         { name: 'title', title: 'Title', type: 'string' },
         { name: 'description', title: 'Description', type: 'text' },
+        {
+          name: 'button',
+          title: 'Button',
+          type: 'reference',
+          to: [{ type: 'callToAction' }],
+        },
       ],
     },
 

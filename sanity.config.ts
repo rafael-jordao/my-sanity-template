@@ -32,6 +32,12 @@ export default defineConfig({
                       .toString()}]`
                   )
               ),
+            S.listItem().title('Call To Actions').child(
+              // Lista documentos cuja collection (_type) esteja entre esses tipos
+              S.documentList()
+                .title('All CTAs')
+                .filter(`_type in ["callToAction"]`)
+            ),
 
             // (opcionais) outras seções…
             // ...S.documentTypeListItem('post'),
