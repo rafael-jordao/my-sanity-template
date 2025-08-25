@@ -185,10 +185,6 @@ case $TYPE in
         cat > "$INTERFACE_FILE" << EOF
 export interface I${PASCAL_CASE} {
   title: string;
-$(if [[ "$TYPE" == "document" ]]; then
-  echo "  slug: { current: string };"
-fi)
-}
 EOF
         ;;
     "page")
@@ -212,9 +208,6 @@ import groq from 'groq';
 
 export const GROQ${PASCAL_CASE}Query = groq\`
   title,
-$(if [[ "$TYPE" == "document" ]]; then
-  echo '  "slug": slug.current,'
-fi)
 \`;
 EOF
         ;;
@@ -242,40 +235,152 @@ echo -e "${GREEN}✓ Created interface:${NC} $INTERFACE_FILE"
 echo -e "${GREEN}✓ Created query:${NC} $QUERY_FILE"
 echo ""
 
-# Generate instructions for manual steps
-echo -e "${YELLOW}📋 Manual steps required:${NC}"
-echo ""
+# Function to add line to file if not already present
+add_line_if_not_exists() {
+    local file="$1"
+    local line="$2"
+    local search_pattern="$3"
+    
+    if ! grep -q "$search_pattern" "$file" 2>/dev/null; then
+        echo "$line" >> "$file"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to add import after specific line
+add_import_after() {
+    local file="$1"
+    local import_line="$2"
+    local after_pattern="$3"
+    local check_pattern="$4"
+    
+    if ! grep -q "$check_pattern" "$file" 2>/dev/null; then
+        sed -i "" "/$after_pattern/a\\
+$import_line" "$file"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Automatic integration
+echo -e "${YELLOW}🔧 Integrating into project...${NC}"
 
 case $TYPE in
-    "object")
-        echo -e "${BLUE}1. Add to schema index:${NC}"
-        echo "   Edit: sanity/schema/index.ts"
-        echo "   Add: import { ${NAME}Type } from './objects/${NAME}.studio';"
-        echo "   Add: ${NAME}Type to the types array"
+    "object"|"document")
+        # Add to schema index
+        SCHEMA_INDEX="sanity/schema/index.ts"
+        
+        if [[ "$TYPE" == "object" ]]; then
+            IMPORT_LINE="import { ${NAME}Type } from './objects/${NAME}.studio';"
+            # Add import and export
+            if add_import_after "$SCHEMA_INDEX" "$IMPORT_LINE" "import.*buttonType.*objects" "${NAME}Type"; then
+                sed -i "" "/buttonType,/a\\
+  ${NAME}Type," "$SCHEMA_INDEX"
+            fi
+        else
+            IMPORT_LINE="import { ${NAME}Type } from './documents/${NAME}.studio';"
+            # Add import and export  
+            if add_import_after "$SCHEMA_INDEX" "$IMPORT_LINE" "import.*callToActionType.*documents" "${NAME}Type"; then
+                sed -i "" "/callToActionType,/a\\
+  ${NAME}Type," "$SCHEMA_INDEX"
+            fi
+        fi
+        
+        echo -e "${GREEN}✓ Added to schema index${NC}"
         ;;
-    "document")
-        echo -e "${BLUE}1. Add to schema index:${NC}"
-        echo "   Edit: sanity/schema/index.ts"
-        echo "   Add: import { ${NAME}Type } from './documents/${NAME}.studio';"
-        echo "   Add: ${NAME}Type to the types array"
-        ;;
+        
     "page")
-        echo -e "${BLUE}1. Add to pages index:${NC}"
-        echo "   Edit: sanity/schema/pages/index.studio.ts"
-        echo "   Add: import { ${NAME}Type } from './${NAME}.studio';"
-        echo "   Add: ${NAME}Type to AvailablePages array"
-        echo ""
-        echo -e "${BLUE}2. Add to page routing:${NC}"
-        echo "   Edit: lib/routing/pageTypes.ts"
-        echo "   Add: import { ${NAME}Query } from '../sanity/queries/pages/${NAME}';"
-        echo "   Add: import { Page${PASCAL_CASE} } from '../../components/pages/Page${PASCAL_CASE}';"
-        echo "   Add: '${NAME}': { query: ${NAME}Query, component: Page${PASCAL_CASE} } to PageTypeMap"
-        echo ""
-        echo -e "${BLUE}3. Create page component:${NC}"
-        echo "   Create: components/pages/Page${PASCAL_CASE}.tsx"
+        # 1. Add to pages index
+        PAGES_INDEX="sanity/schema/pages/index.studio.ts"
+        IMPORT_LINE="import { ${NAME}Type } from './${NAME}.studio';"
+        
+        if add_import_after "$PAGES_INDEX" "$IMPORT_LINE" "import.*pageLegalType" "${NAME}Type"; then
+            # Add to array
+            sed -i "" "s/pageLegalType]/pageLegalType, ${NAME}Type]/" "$PAGES_INDEX"
+            echo -e "${GREEN}✓ Updated pages index${NC}"
+        else
+            echo -e "${YELLOW}⚠ Already exists in pages index${NC}"
+        fi
+        
+        # 2. Add to routing
+        ROUTING_FILE="lib/routing/pageTypes.ts"
+        
+        # Add query import
+        QUERY_IMPORT="import { GROQ${PASCAL_CASE}Query } from '../sanity/queries/pages/${NAME}';"
+        add_import_after "$ROUTING_FILE" "$QUERY_IMPORT" "import.*GROQPageLegalQuery" "GROQ${PASCAL_CASE}Query"
+        
+        # Add component import
+        COMPONENT_IMPORT="import Page${PASCAL_CASE} from '@/components/pages/Page${PASCAL_CASE}';"
+        add_import_after "$ROUTING_FILE" "$COMPONENT_IMPORT" "import PageLegal" "Page${PASCAL_CASE}"
+        
+        # Add to arrays if imports were added
+        if grep -q "GROQ${PASCAL_CASE}Query" "$ROUTING_FILE"; then
+            # Add to AVAILABLE_PAGE_TYPES
+            sed -i "" "s/'pageLegal',/'pageLegal',\\
+  '${NAME}',/" "$ROUTING_FILE"
+            
+            # Add to PageTypeMap
+            sed -i "" "/pageLegal: { query: GROQPageLegalQuery, component: PageLegal },/a\\
+  ${NAME}: { query: GROQ${PASCAL_CASE}Query, component: Page${PASCAL_CASE} }," "$ROUTING_FILE"
+            
+            echo -e "${GREEN}✓ Updated routing${NC}"
+        else
+            echo -e "${YELLOW}⚠ Already exists in routing${NC}"
+        fi
+        
+        # 3. Create component
+        COMPONENT_DIR="components/pages"
+        COMPONENT_FILE="${COMPONENT_DIR}/Page${PASCAL_CASE}.tsx"
+        
+        mkdir -p "$COMPONENT_DIR"
+        
+        if [[ ! -f "$COMPONENT_FILE" ]]; then
+            cat > "$COMPONENT_FILE" << EOF
+import { I${PASCAL_CASE} } from '@/lib/sanity/types/pages/I${PASCAL_CASE}';
+
+export default function Page${PASCAL_CASE}({ data }: { data: I${PASCAL_CASE} }) {
+  return (
+    <div>
+      <h1>{data?.settings?.title}</h1>
+      {data?.content?.title && <h2>{data.content.title}</h2>}
+    </div>
+  );
+}
+EOF
+            echo -e "${GREEN}✓ Created page component${NC}"
+        else
+            echo -e "${YELLOW}⚠ Component already exists${NC}"
+        fi
         ;;
 esac
 
 echo ""
-echo -e "${GREEN}🎉 Schema creation completed!${NC}"
-echo -e "${BLUE}Remember to restart your development server after making the manual changes.${NC}"
+
+# Success message
+echo -e "${YELLOW}📋 Next steps:${NC}"
+echo ""
+
+case $TYPE in
+    "object"|"document")
+        echo -e "${BLUE}✅ Schema automatically integrated!${NC}"
+        echo -e "${GREEN}   • Added to sanity/schema/index.ts${NC}"
+        echo -e "${GREEN}   • Ready to use in other schemas${NC}"
+        ;;
+    "page")
+        echo -e "${BLUE}✅ Page automatically integrated!${NC}"
+        echo -e "${GREEN}   • Added to pages index and routing${NC}"
+        echo -e "${GREEN}   • Component created${NC}"
+        echo ""
+        echo -e "${YELLOW}Manual steps:${NC}"
+        echo -e "${BLUE}   1. Create page in Sanity Studio with type '${NAME}'${NC}"
+        echo -e "${BLUE}   2. Set desired slug in page settings${NC}"
+        echo -e "${BLUE}   3. Now access your page and happy coding!${NC}"
+        ;;
+esac
+
+echo ""
+echo -e "${GREEN}🎉 Schema creation completed successfully!${NC}"
+echo -e "${BLUE}All files have been generated and integrated automatically.${NC}"
