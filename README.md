@@ -22,62 +22,126 @@ Template de Next.js 15 com Sanity CMS integrado, utilizando ISR (Incremental Sta
 - Node.js 20+
 - pnpm (recomendado)
 
-## 🛠️ Sistema sanityFetch
+## 🛠️ Função sanityFetch
 
-A função `sanityFetch` é o coração do sistema de ISR, oferecendo uma interface moderna e otimizada para buscar dados do Sanity.
+A função `sanityFetch` é uma abstração limpa e tipada para buscar dados do Sanity com suporte a ISR nativo do Next.js.
 
 ### Características
 
-- **Cache Inteligente**: Configurações de revalidate por tipo de conteúdo
-- **ISR Otimizado**: Gerenciamento automático de cache do Next.js
-- **Modo Preview**: Suporte a conteúdo draft/preview
-- **Error Handling**: Tratamento robusto de erros
+- **TypeScript Genérico**: Suporte a tipos personalizados para o retorno
+- **ISR Nativo**: Usa o sistema `next` do Next.js 15 para cache e revalidação
 - **Server-Only**: Executado apenas no servidor para segurança
+- **Error Handling**: Tratamento robusto de erros com logs detalhados
+- **CDN Desabilitado**: Configurado para ISR otimizado
 
-### Configurações de Revalidate
+### Interface da Função
 
 ```typescript
-const REVALIDATE_CONFIGS = {
-  default: 3600, // 1 hora
-  pages: 1800, // 30 minutos para páginas
-  home: 600, // 10 minutos para home
-  static: false, // Não revalidar conteúdo estático
+type SanityFetchOptions = {
+  query: string; // Query GROQ
+  params?: QueryParams; // Parâmetros da query
+  revalidate?: number | false; // Tempo de revalidação (padrão: 60s)
+  tags?: string[]; // Tags para cache do Next.js
 };
+
+// Uso genérico com tipagem
+await sanityFetch<TipoRetorno>(options);
 ```
 
-### Uso da Função
+### Exemplos de Uso
 
 ```typescript
-// Busca básica
-const data = await sanityFetch({ query, params });
-
-// Com configurações específicas
-const page = await sanityFetch({
-  query,
-  params,
-  options: {
-    revalidateTag: 'pages',
-    tags: ['page', 'about'],
-    preview: false,
-  },
+// Busca básica com revalidação padrão (60s)
+const data = await sanityFetch<IHomepage>({
+  query: homepageQuery,
+  params: { id: 'homepage' },
 });
 
-// Cache personalizado
+// Cache estático (sem revalidação)
 const staticData = await sanityFetch({
-  query,
-  options: { revalidate: false, cache: 'force-cache' },
+  query: '*[_type == "settings"][0]',
+  revalidate: false,
+});
+
+// Com tags para invalidação seletiva
+const pageData = await sanityFetch({
+  query: pageQuery,
+  params: { slug },
+  revalidate: 3600, // 1 hora
+  tags: ['pages', `page-${slug}`],
+});
+
+// Revalidação rápida para dados dinâmicos
+const liveData = await sanityFetch({
+  query: '*[_type == "news"] | order(_createdAt desc)',
+  revalidate: 60, // 1 minuto
+  tags: ['news'],
 });
 ```
 
-### Webhooks de Revalidação
+## � Script create-schema.sh
 
-Configure webhooks no Sanity para revalidação automática:
+O projeto inclui um script automatizado para gerar schemas, interfaces TypeScript e queries GROQ de forma consistente.
 
-1. No Sanity Studio, vá em API > Webhooks
-2. Adicione: `https://seusite.com/api/revalidate`
-3. Configure o secret: `SANITY_WEBHOOK_SECRET`
+### Como Usar
 
-## 🛠️ Instalação
+```bash
+# Tornar o script executável (apenas uma vez)
+chmod +x create-schema.sh
+
+# Criar um object (para reutilização)
+./create-schema.sh --type object --name testimonial
+
+# Criar um document (entidade standalone)
+./create-schema.sh --type document --name blogPost
+
+# Criar uma page (página tipada)
+./create-schema.sh --type page --name contactPage
+```
+
+### O que o Script Faz
+
+**Para cada tipo, cria automaticamente:**
+
+1. **Schema Sanity**: Arquivo `.studio.ts` na pasta apropriada
+2. **Interface TypeScript**: Arquivo `I[Nome].ts` com tipos adequados
+3. **Query GROQ**: Fragment ou query completa dependendo do tipo
+
+### Tipos Disponíveis
+
+| Tipo       | Onde cria                  | Exemplo              | Uso                       |
+| ---------- | -------------------------- | -------------------- | ------------------------- |
+| `object`   | `sanity/schema/objects/`   | `button`, `seo`      | Componentes reutilizáveis |
+| `document` | `sanity/schema/documents/` | `blogPost`, `author` | Entidades independentes   |
+| `page`     | `sanity/schema/pages/`     | `contact`, `about`   | Páginas do site           |
+
+### Estrutura Gerada
+
+```bash
+# Para: ./create-schema.sh --type document --name product
+
+# ✅ Schema
+sanity/schema/documents/product.studio.ts
+export const productType = defineType({ ... })
+
+# ✅ Interface
+lib/sanity/types/IProduct.ts
+export interface IProduct { ... }
+
+# ✅ Query
+lib/sanity/queries/fragments/product.ts
+export const GROQProductQuery = groq`...`
+```
+
+### Passos Manuais Após Execução
+
+O script exibe instruções sobre os passos manuais necessários:
+
+- **Objects/Documents**: Adicionar ao `sanity/schema/index.ts`
+- **Pages**: Adicionar ao `sanity/schema/pages/index.studio.ts` e `lib/routing/pageTypes.ts`
+- **Pages**: Criar componente em `components/pages/Page[Nome].tsx`
+
+## �🛠️ Instalação
 
 1. Clone o projeto
 2. Instale as dependências:
