@@ -27,6 +27,12 @@ export const pageSettingsType = defineType({
       },
     },
     { name: 'seo', title: 'SEO', type: 'seo' },
+    {
+      name: 'header',
+      title: 'Header',
+      type: 'reference',
+      to: [{ type: 'header' }],
+    },
   ],
   preview: {
     select: { title: 'title', slug: 'slug.current' },

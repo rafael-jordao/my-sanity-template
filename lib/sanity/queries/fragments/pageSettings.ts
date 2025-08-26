@@ -1,5 +1,6 @@
 import groq from 'groq';
 import { GROQSeoQuery } from './seo';
+import { GROQHeaderQuery } from './header';
 
 export const GROQPageSettingsQuery = groq`
   settings{
@@ -7,6 +8,9 @@ export const GROQPageSettingsQuery = groq`
     "slug": slug.current,
     seo {
      ${GROQSeoQuery}
+    },
+    header->{
+      ${GROQHeaderQuery}
     }
   }
 `;

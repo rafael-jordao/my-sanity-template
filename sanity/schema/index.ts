@@ -4,10 +4,11 @@
 import { pageSettingsType } from './objects/pageSettings.studio';
 import { seoType } from './objects/seo.studio';
 import { buttonType } from './objects/button.studio';
-
+import { linkType } from './objects/link.studio';
 // Documents
 import { callToActionType } from './documents/callToAction.studio';
-
+import { menuType } from './documents/menu.studio';
+import { headerType } from './documents/header.studio';
 // Páginas
 import { AvailablePages } from './pages/index.studio';
 
@@ -17,9 +18,12 @@ export const schemaTypes = [
   pageSettingsType,
   seoType,
   buttonType,
+  linkType,
 
   // Documents
   callToActionType,
+  menuType,
+  headerType,
 
   // Pages (documents)
   ...AvailablePages,

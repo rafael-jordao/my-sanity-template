@@ -8,7 +8,7 @@ export const GROQHomepageQuery = groq`
     hero{ 
       title, 
       description,
-      button->{${GROQCallToActionQuery}}
+      callToAction->{${GROQCallToActionQuery}}
     },
 
     intro{ 

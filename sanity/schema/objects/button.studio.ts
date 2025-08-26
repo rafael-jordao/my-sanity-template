@@ -7,12 +7,6 @@ export const buttonType = defineType({
   type: 'object',
   fields: [
     {
-      name: 'title',
-      title: 'Button Text',
-      type: 'string',
-      validation: (Rule) => Rule.required().max(50),
-    },
-    {
       name: 'variant',
       title: 'Button Variant',
       type: 'string',
@@ -30,14 +24,12 @@ export const buttonType = defineType({
   ],
   preview: {
     select: {
-      title: 'title',
-      subtitle: 'variant',
+      title: 'variant',
     },
     prepare(selection) {
-      const { title, subtitle } = selection;
+      const { title } = selection;
       return {
         title: title || 'Button',
-        subtitle: `Variant: ${subtitle || 'primary'}`,
       };
     },
   },

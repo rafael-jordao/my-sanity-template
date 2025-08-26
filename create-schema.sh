@@ -185,6 +185,7 @@ case $TYPE in
         cat > "$INTERFACE_FILE" << EOF
 export interface I${PASCAL_CASE} {
   title: string;
+};
 EOF
         ;;
     "page")

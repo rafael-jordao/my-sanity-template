@@ -23,7 +23,6 @@ export default defineConfig({
             S.listItem()
               .title('Pages')
               .child(
-                // Lista documentos cuja collection (_type) esteja entre esses tipos
                 S.documentList()
                   .title('All pages')
                   .filter(
@@ -32,12 +31,25 @@ export default defineConfig({
                       .toString()}]`
                   )
               ),
-            S.listItem().title('Call To Actions').child(
-              // Lista documentos cuja collection (_type) esteja entre esses tipos
-              S.documentList()
-                .title('All CTAs')
-                .filter(`_type in ["callToAction"]`)
-            ),
+            S.listItem()
+              .title('Call To Actions')
+              .child(
+                S.documentList()
+                  .title('All CTAs')
+                  .filter(`_type in ["callToAction"]`)
+              ),
+            S.listItem()
+              .title('Menus')
+              .child(
+                S.documentList().title('All menus').filter(`_type in ["menu"]`)
+              ),
+            S.listItem()
+              .title('Headers')
+              .child(
+                S.documentList()
+                  .title('All headers')
+                  .filter(`_type in ["header"]`)
+              ),
 
             // (opcionais) outras seções…
             // ...S.documentTypeListItem('post'),
